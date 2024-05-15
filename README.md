@@ -4,7 +4,10 @@ Example architecture for running the harness relay proxy using aws ecs.
 
 This repo can be used as a Terraform module, or a starting point for your own project.
 
-![image](https://github.com/harness-community/feature-flag-relay-proxy-ecs/assets/7338312/f6262a68-df58-476d-9a35-05313d0491f9)
+Public:
+![image](https://github.com/harness-community/feature-flag-relay-proxy-ecs/assets/7338312/e3db67a7-9591-4aab-bfe6-77f9daeb25d0)
+Private:
+![image](https://github.com/harness-community/feature-flag-relay-proxy-ecs/assets/7338312/6709eebf-6da5-4864-9266-dcf93498f30e)
 *everything in blue is covered by this module
 
 ## example usage
