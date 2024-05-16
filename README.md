@@ -4,6 +4,12 @@ Example architecture for running the harness relay proxy using aws ecs.
 
 This repo can be used as a Terraform module, or a starting point for your own project.
 
+Public:
+![image](https://github.com/harness-community/feature-flag-relay-proxy-ecs/assets/7338312/2ee78f96-34f4-400d-bb31-9102fc4d041f)
+Private:
+![image](https://github.com/harness-community/feature-flag-relay-proxy-ecs/assets/7338312/6709eebf-6da5-4864-9266-dcf93498f30e)
+*everything in blue is covered by this module
+
 ## example usage
 
 ```terraform
@@ -31,7 +37,7 @@ Once deployed you can grab the ALB URL from the output `proxy_url` and check its
 
 ## Requirements
 
-You must have an existing VPC with private and public subnets.
+You must have an existing VPC with subnets.
 
 There must also be an AWS Secrets Manager secret with your proxy key as the value.
 
