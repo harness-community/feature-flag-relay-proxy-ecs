@@ -40,7 +40,7 @@ variable "cluster_id" {
 
 variable "cluster_name" {
   type        = string
-  default     = "ff-proxy"
+  default     = ""
   description = "Name for the ECS cluster created by the module (if no existing cluster id given)"
 }
 
@@ -50,9 +50,16 @@ variable "vpc_id" {
   description = "ID for the existing VPC to use"
 }
 
-variable "security_groups" {
+variable "proxy_security_groups" {
   type        = list(string)
-  description = "VPC security groups to attach to all resources created"
+  description = "VPC security groups to attach to the proxy tasks"
+  default     = []
+}
+
+variable "redis_security_groups" {
+  type        = list(string)
+  description = "VPC security groups to attach to the redis instance"
+  default     = []
 }
 
 variable "proxy_subnets" {
@@ -97,9 +104,9 @@ variable "tags" {
 
 # ff-proxy configuration
 
-variable "ff_proxy_image" {
+variable "image" {
   type        = string
-  description = "delegate image to use, eg: harness/ff-proxy:2.0.0-rc18"
+  description = "proxy image to use, eg: harness/ff-proxy:2.0.0-rc24"
 }
 
 variable "writer_environment" {

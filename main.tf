@@ -175,8 +175,8 @@ resource "aws_iam_role_policy_attachment" "task_exec" {
   policy_arn = aws_iam_policy.task_exec[0].arn
 }
 
-resource "aws_security_group" "this" {
-  name        = var.name
+resource "aws_security_group" "proxy" {
+  name        = "${var.name}-proxy"
   description = "Allow inbound traffic to ff proxy"
   vpc_id      = var.vpc_id
 
@@ -197,7 +197,7 @@ resource "aws_security_group" "this" {
   }
 
   tags = {
-    Name   = var.name
+    Name   = "${var.name}-proxy"
     source = "harness-community/feature-flag-relay-proxy-ecs",
   }
 }
@@ -213,7 +213,7 @@ resource "aws_ecs_task_definition" "writer" {
   container_definitions = jsonencode([
     {
       name      = "writer"
-      image     = var.ff_proxy_image
+      image     = var.image
       essential = true
       memory    = var.writer_memory
       repositoryCredentials = var.registry_secret_arn != "" ? {
@@ -266,7 +266,7 @@ resource "aws_ecs_service" "writer" {
   enable_execute_command = var.enable_ecs_exec
 
   network_configuration {
-    security_groups  = concat(var.security_groups, [aws_security_group.this.id])
+    security_groups  = concat(var.proxy_security_groups, [aws_security_group.proxy.id])
     subnets          = var.proxy_subnets
     assign_public_ip = false
   }
@@ -288,7 +288,7 @@ resource "aws_ecs_task_definition" "read_replica" {
   container_definitions = jsonencode([
     {
       name      = "read-replica"
-      image     = var.ff_proxy_image
+      image     = var.image
       essential = true
       memory    = var.read_replica_memory
       repositoryCredentials = var.registry_secret_arn != "" ? {
@@ -332,7 +332,7 @@ resource "aws_ecs_task_definition" "read_replica" {
 }
 
 resource "aws_ecs_service" "read_replica" {
-  name                   = "${var.name}read-replica"
+  name                   = "${var.name}-read-replica"
   cluster                = var.cluster_id != "" ? var.cluster_id : aws_ecs_cluster.this[0].id
   task_definition        = aws_ecs_task_definition.read_replica.arn
   desired_count          = var.read_replica_count
@@ -341,7 +341,7 @@ resource "aws_ecs_service" "read_replica" {
   enable_execute_command = var.enable_ecs_exec
 
   network_configuration {
-    security_groups  = concat(var.security_groups, [aws_security_group.this.id])
+    security_groups  = concat(var.proxy_security_groups, [aws_security_group.proxy.id])
     subnets          = var.proxy_subnets
     assign_public_ip = false
   }
@@ -356,7 +356,7 @@ resource "aws_ecs_service" "read_replica" {
 resource "aws_lb" "read_replica" {
   name               = var.name
   load_balancer_type = "application"
-  security_groups    = concat(var.security_groups, [aws_security_group.this.id])
+  security_groups    = concat(var.proxy_security_groups, [aws_security_group.proxy.id])
   subnets            = var.alb_subnets
 
   tags = merge(var.tags, {
@@ -376,7 +376,7 @@ resource "aws_lb_listener" "read_replica" {
 }
 
 resource "aws_lb_target_group" "read_replica" {
-  name        = "${var.name}read-replica"
+  name        = "${var.name}-read-replica"
   port        = 7000
   protocol    = "HTTP"
   target_type = "ip"
@@ -384,6 +384,33 @@ resource "aws_lb_target_group" "read_replica" {
 
   health_check {
     path = "/health"
+  }
+}
+
+resource "aws_security_group" "redis" {
+  name        = "${var.name}-redis"
+  description = "Allow inbound traffic to redis"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "Redis"
+    from_port   = 6379
+    to_port     = 6379
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name   = "${var.name}-redis"
+    source = "harness-community/feature-flag-relay-proxy-ecs",
   }
 }
 
@@ -400,7 +427,7 @@ resource "aws_elasticache_cluster" "this" {
   parameter_group_name = "default.redis7"
   engine_version       = "7.1"
   port                 = 6379
-  security_group_ids   = concat(var.security_groups, [aws_security_group.this.id])
+  security_group_ids   = concat(var.redis_security_groups, [aws_security_group.redis.id])
   subnet_group_name    = aws_elasticache_subnet_group.this.name
   tags = merge(var.tags, {
     source    = "harness-community/feature-flag-relay-proxy-ecs",
